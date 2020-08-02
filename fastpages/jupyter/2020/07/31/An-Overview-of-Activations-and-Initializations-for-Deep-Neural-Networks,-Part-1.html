@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="twitter:card" content="summary" /><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>An Overview of Initialization for Deep Neural Networks, Part 1 | Andrei Kulchik blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="An Overview of Initialization for Deep Neural Networks, Part 1" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Without appropriate choice of activation function and/or smart initialization for it neural networks, especially deep ones, tend to refuse training at all. We will consider sigmoid and tanh activation functions and two initialization methods most suitable for them - LeCun and Xavier (Glorot) initialization." />
+<meta property="og:description" content="Without appropriate choice of activation function and/or smart initialization for it neural networks, especially deep ones, tend to refuse training at all. We will consider sigmoid and tanh activation functions and two initialization methods most suitable for them - LeCun and Xavier (Glorot) initialization." />
+<link rel="canonical" href="https://akulchik.github.io/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html" />
+<meta property="og:url" content="https://akulchik.github.io/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html" />
+<meta property="og:site_name" content="Andrei Kulchik blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-07-31T00:00:00-05:00" />
+<script type="application/ld+json">
+{"description":"Without appropriate choice of activation function and/or smart initialization for it neural networks, especially deep ones, tend to refuse training at all. We will consider sigmoid and tanh activation functions and two initialization methods most suitable for them - LeCun and Xavier (Glorot) initialization.","@type":"BlogPosting","headline":"An Overview of Initialization for Deep Neural Networks, Part 1","dateModified":"2020-07-31T00:00:00-05:00","datePublished":"2020-07-31T00:00:00-05:00","url":"https://akulchik.github.io/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html","mainEntityOfPage":{"@type":"WebPage","@id":"https://akulchik.github.io/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/blog/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="https://akulchik.github.io/blog/feed.xml" title="Andrei Kulchik blog" /><link rel="shortcut icon" type="image/x-icon" href="/blog/images/favicon.ico"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>An Overview of Initialization for Deep Neural Networks, Part 1 | Andrei Kulchik blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="An Overview of Initialization for Deep Neural Networks, Part 1" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Without appropriate choice of activation function and/or smart initialization for it neural networks, especially deep ones, tend to refuse training at all. We will consider sigmoid and tanh activation functions and two initialization methods most suitable for them - LeCun and Xavier (Glorot) initialization." />
+<meta property="og:description" content="Without appropriate choice of activation function and/or smart initialization for it neural networks, especially deep ones, tend to refuse training at all. We will consider sigmoid and tanh activation functions and two initialization methods most suitable for them - LeCun and Xavier (Glorot) initialization." />
+<link rel="canonical" href="https://akulchik.github.io/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html" />
+<meta property="og:url" content="https://akulchik.github.io/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html" />
+<meta property="og:site_name" content="Andrei Kulchik blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-07-31T00:00:00-05:00" />
+<script type="application/ld+json">
+{"description":"Without appropriate choice of activation function and/or smart initialization for it neural networks, especially deep ones, tend to refuse training at all. We will consider sigmoid and tanh activation functions and two initialization methods most suitable for them - LeCun and Xavier (Glorot) initialization.","@type":"BlogPosting","headline":"An Overview of Initialization for Deep Neural Networks, Part 1","dateModified":"2020-07-31T00:00:00-05:00","datePublished":"2020-07-31T00:00:00-05:00","url":"https://akulchik.github.io/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html","mainEntityOfPage":{"@type":"WebPage","@id":"https://akulchik.github.io/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+<link href="https://unpkg.com/@primer/css/dist/primer.css" rel="stylesheet" />
+<link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css"><link type="application/atom+xml" rel="alternate" href="https://akulchik.github.io/blog/feed.xml" title="Andrei Kulchik blog" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq" crossorigin="anonymous">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"> </script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement( document.body, {
+        delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "[%", right: "%]", display: true},
+            {left: "$", right: "$", display: false}
+        ]}
+        );
+    });
+    </script>
+
+
+<script>
+function wrap_img(fn) {
+    if (document.attachEvent ? document.readyState === "complete" : document.readyState !== "loading") {
+        var elements = document.querySelectorAll(".post img");
+        Array.prototype.forEach.call(elements, function(el, i) {
+            if (el.getAttribute("title") && (el.className != "emoji")) {
+                const caption = document.createElement('figcaption');
+                var node = document.createTextNode(el.getAttribute("title"));
+                caption.appendChild(node);
+                const wrapper = document.createElement('figure');
+                wrapper.className = 'image';
+                el.parentNode.insertBefore(wrapper, el);
+                el.parentNode.removeChild(el);
+                wrapper.appendChild(el);
+                wrapper.appendChild(caption);
+            }
+        });
+    } else { document.addEventListener('DOMContentLoaded', fn); }
+}
+window.onload = wrap_img;
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+    // add link icon to anchor tags
+    var elem = document.querySelectorAll(".anchor-link")
+    elem.forEach(e => (e.innerHTML = '<i class="fas fa-link fa-xs"></i>'));
+    });
+</script>
+</head>
+<body><header class="site-header">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/blog/">Andrei Kulchik blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/blog/about/">About Me</a><a class="page-link" href="/blog/search/">Search</a><a class="page-link" href="/blog/categories/">Tags</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">An Overview of Initialization for Deep Neural Networks, Part 1</h1><p class="page-description">Without appropriate choice of activation function and/or smart initialization for it neural networks, especially deep ones, tend to refuse training at all. We will consider sigmoid and tanh activation functions and two initialization methods most suitable for them - LeCun and Xavier (Glorot) initialization.</p><p class="post-meta post-meta-title"><time class="dt-published" datetime="2020-07-31T00:00:00-05:00" itemprop="datePublished">
+        Jul 31, 2020
+      </time>
+       • <span class="read-time" title="Estimated read time">
+    
+    
+      9 min read
+    
+</span></p>
+
+    
+      <p class="category-tags"><i class="fas fa-tags category-tags-icon"></i></i> 
+      
+        <a class="category-tags-link" href="/blog/categories/#fastpages">fastpages</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/blog/categories/#jupyter">jupyter</a>
+        
+      
+      </p>
+    
+
+    
+      </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <!--
+#################################################
+### THIS FILE WAS AUTOGENERATED! DO NOT EDIT! ###
+#################################################
+# file to edit: _notebooks/2020-07-31-An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.ipynb
+-->
+
+<div class="container" id="notebook-container">
+        
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>For the past few years deep neural networks have proven themselves to be able to solve various AI-level tasks effectively. In some very specific tasks, such as image classification, game of Go, autonomous driving, and many others they already perform better than humans. These achievements were not possible without tremendous research invested in study of difficulties that occur during training of deep networks, and methods to overcome them. A part of this progress is due to better non-linearities and initialization methods.</p>
+<h2 id="What-Is-the-Choice-of-Activation-Function-and-Initialization-and-Why-Is-It-Important?">What Is the Choice of Activation Function and Initialization and Why Is It Important?<a class="anchor-link" href="#What-Is-the-Choice-of-Activation-Function-and-Initialization-and-Why-Is-It-Important?"> </a></h2><p>Neural networks are typically trained via stochastic gradient descent or one of its more powerful variants, such as RMSprop or Adam, that use gradients computed by the back propagation algorithm. The back propagation algorithm essentially recursively applies the chain rule of calculus to compute gradients efficiently. Just as a reminder, the chain rule of calculus look like this</p>
+\begin{equation}
+    \frac{\partial}{\partial x}g(f(x)) = \frac{\partial g}{\partial f} \frac{\partial f}{\partial x}
+\end{equation}<p>In earlier years folks used sigmoid activation function, defined as</p>
+\begin{equation}
+    \sigma(x) = \frac{1}{1 + e^{-x}}
+\end{equation}<p>However, soon it became evident that such nets are hard to train, because of some properties of sigmoid. One such property is the effect of saturation. Look at the graph of sigmoid.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">sigmoid_derivative</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">plot_activation_and_derivative</span><span class="p">(</span><span class="n">activation</span><span class="p">,</span> <span class="n">derivative</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">titles</span><span class="p">):</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_f</span><span class="p">,</span> <span class="n">ax_d</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="n">ax_f</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">activation</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span>
+    <span class="n">ax_f</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">titles</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">ax_d</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">derivative</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span>
+    <span class="n">ax_d</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">titles</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mf">6.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
+<span class="n">plot_activation_and_derivative</span><span class="p">(</span><span class="n">sigmoid</span><span class="p">,</span> <span class="n">sigmoid_derivative</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span>
+                               <span class="p">(</span><span class="s1">&#39;Sigmoid activation&#39;</span><span class="p">,</span> <span class="s1">&#39;Derivative of sigmoid&#39;</span><span class="p">))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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
+" />
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>When input values become large enough (whether positive or negative), output of sigmoid remains roughly unchanged and goes to 1 in case of positive inputs, or to 0 in case of negative. This saturation of sigmoid causes gradient vanishing. Since output values are roughly equal in those saturated tails, the derivative of sigmoid becomes very close to zero. As back propagation progresses towards input layers, gradients get multiplied, and if at least one of multiples becomes close to zero, the whole product is likely to become close to zero as well. Hence it can require too many gradient updates to tweak parameters in right way. Now look at the graph of the derivative of sigmoid more closely. You can note that its maximum value is 0.25 when input value is 0. So, in the best case, gradient gets four times smaller after sigmoid activation during back propagation.</p>
+<p>There is another saturating activation function that, however, suffers less from vanishing gradient problems. It is called hyperbolic tangent, or tanh for short.</p>
+\begin{equation}
+    \tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}
+\end{equation}<p>Actually it can be shown from their definitions that tanh can be expressed in terms of sigmoid as follows</p>
+\begin{equation}
+    \tanh(x) = 2\sigma(2x) - 1
+\end{equation}<p>In spite of that, tanh has two advantages over the sigmoid. First, it is symmetric in the origin, which makes it easier to learn identity function, and second, maximum value of its derivative is 1.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">tanh</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">tanh_derivative</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+<span class="n">plot_activation_and_derivative</span><span class="p">(</span><span class="n">tanh</span><span class="p">,</span> <span class="n">tanh_derivative</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span>
+                               <span class="p">(</span><span class="s1">&#39;Tanh activation&#39;</span><span class="p">,</span> <span class="s1">&#39;Tanh derivative&#39;</span><span class="p">))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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MLPRZjaOqMh8r0CMT45/AH5l0fe8HW1mx8c5G6wEzjCzGjOrbupAIYSNRCfk64kGZrgtZ/EmYD3wBTM71sxOjLPsarSb5hzrF0SDU91qZqPM7BSiT6mfDiE8fZCfh4iIlLe0z8v/AXzNzK4ysyFxr6WzG63zfeAiM/upmY2Lc041s9/EAyEdqjuIRjr+DfBiCCH3w97lQB8z+5yZDTazTwNfarT9yvj5wvjWpC4tPNYf4n09ZGbnmtmRZjbZzL5jZhe3oF0iLaICVuTAfk1UXP0OeIlogIcftOHxP0P0/3Q2cB/wCDBnP+v8GvgRUdeee4Gjcpb/PTABeIOoCD2Q24BxwPwQwqKGmSEaqfiTwNHAQqKuzT/n/e/ka/axQgjvEF0xHhi35UGiK6+NPzEWERFpLO3z8k1EI/z+DJhPNDL/9bkrhBBmEI0uPAZ4mui8+TNgG7DvUA8YQthA9AHzOHLGpoiXPUjUffrHwCLgcqKuxLnrzIlz/5rontZftPBYu4HTia7E/g54BbiHaDTlNw+1XSItZSGEg68lIiIiIiIikjJdgRUREREREZGioAJWREREREREioIKWBERERERESkKKmBFRERERESkKKiAFRERERERkaJQmXaAFtLQySIikjRLO0CR07lZRESS9qFzc7EWsKxZsybvfVRXV1NbW5tAmuKidpcXtbu8qN0tU1NTk2Ca8qVzc8up3eVF7S4vanfLNHVuVhdiERERERERKQoqYEVERERERKQoqIAVERERERGRoqACVkRERERERIqCClgREREREREpCipgRUREREREpCiogBUREREREZGikMj3wDrnfgt8DHjXez9qP8sNuAn4CLATuMZ7/2K87Grge/GqP/Le35ZEJhERERERESktSV2BvRWYeoDl5wND4se1wP8FcM71Aq4DJgOTgOuccz0TyiQiIiIiIiIlJJErsN77p5xzRx5glYuA2733AXjeOdfDOdcfmAI86r3fCOCce5SoEL4jiVwiIoUmZOuhri561Dc86qNHth7qs9FzNvc5foQshBA9Z8P7rwPRM4HdXboStm6JlwVCAAjvTUchQkOaaNv3wjUx/4MTOes1blwT8w9Vc/dTUUnm5LOSOaaISBsJa1exe8VSwsDBWFX7tOOIFJ1ECthmGAC8nTO9Kp7X1PwPcc5dS3T1Fu891dXVeYeqrKxM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Z8fTOOcmOuduidcZDsx1zi0gKlhv9N4viZd9C/iGc+41ontif5NnHpGiF40+/AwMG4t17ZZ2HBERERGRgpHXIE7e+w3AWfuZPxf4fPx6FjC6ie1XAJPyySBSct54Fdavw86/9ODrioiIiIiUkXyvwIpIwsKsx6GqCpugr88REREREcmlAlakgIR9ewmzn8bGnYh16px2HBERERGRgqICVqSQLJgNO7djJ52ZdhIRERERkYKjAlakgGRnPQE9esPwMWlHEREREREpOCpgRQpE2LIJXn4RO3EKlqlIO46IiIiISMFRAStSIMILMyGbxU780MDeIiIiIiKCCliRghBCIMx6Ao46Fus/MO04IiIiIiIFSQWsSCF44zVY/aYGbxIREREROQAVsCIFIMx4CNp3xCZPSTuKiIiIiEjBUgErkrKwbSthztPYiWdgHTulHUdEREREpGCpgBVJWXjmUajbh035SNpRREREREQKmgpYkRSFbD1h5jQYOhobcHjacURERERECpoKWJE0LZwDG9eTOfOjaScRERERESl4KmBFUpR94iHoWQ1jJ6cdRURERESk4KmAFUlJWPs2LF2AnT4Vq6hIO46IiIiISMFTASuSkvDwn6CqCjv13LSjiIiIiIgUBRWwIikIte8QXpiJnXoe1q1H2nFERERERIqCCliRFITp94JlsHMvSTuKiIiIiEjRUAEr0sbC5o2EZx7FTjoT61WddhwRERERkaKhAlakjYVH74f6emzqx9OOIiIiIiJSVFTAirShsH0r4cmHseNPwfrWpB1HRERERKSoqIAVaUPhkXtg7x7s/EvTjiIiIiIiUnQq89nYOdcLuAs4EngDcN77TY3WOQP4Wc6sYcDl3vv7nHO3AqcDW+Jl13jv5+eTSaRQhdp3CI//GTthCjbwyLTjiIiIiIgUnbwKWODbwOPe+xudc9+Op7+Vu4L3fgYwDt4reF8D/pKzyj967+/OM4dIwQv3/h7MsIuvTDuKiIiIiEhRyrcL8UXAbfHr24CLD7L+pcDD3vudeR5XpKiEla8SZj+JnXMR1qtP2nFERERERIpSvldgD/Per41frwMOO8j6lwM/bTTvBufc94HHgW977/fkmUmkoIQQyN79W+jaHZv6ibTjiIiIiIgUrYMWsM65x4B++1n03dwJ731wzoUD7Kc/MBqYnjP7O0SFbxVwM1H3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
+" />
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Tanh is widely used in recurrent neural networks today.</p>
+<p>Nowadays we have many ways to address vanishing gradient and similar exploding gradient issues. And one of these is better initialization. Initialization is also important because gradient-based methods can stuck in bad local minima, not reaching the global minimum, and take long to converge because of plateus in the cost function surface. Better initialization reduces chances to start from "unlucky" points.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="LeCun-Initialization">LeCun Initialization<a class="anchor-link" href="#LeCun-Initialization"> </a></h2><p>This is one of the first heuristics for initialization. It was proposed in 1998 by Yann LeCun et al. in the paper called "<a href="http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf">Efficient BackProp</a>". LeCun initialization suggests that weights of network are drawn from normal distribution of the following form</p>
+\begin{equation}
+    W \sim \mathcal{N}\Bigg(0, \frac{1}{fan_{in}}\Bigg)
+\end{equation}<p>where $fan_{in}$ is the number of connections feeding into the node. This is also known as LeCun normal initialization, while in case of LeCun uniform initialization weights are drawn from uniform distribution</p>
+\begin{equation}
+    W \sim \mathcal{U}\Bigg(-\frac{1}{\sqrt{fan_{in}}}, \frac{1}{\sqrt{fan_{in}}}\Bigg)
+\end{equation}<p>LeCun initialization was designed specifically for sigmoid activation. But it has more applications than that. It was proposed to be used with the <a href="https://arxiv.org/pdf/1706.02515.pdf">SELU activation function and self-normalizing networks</a>.</p>
+<p>Note that regardless the method of initialization, weights are usually drawn either from normal or uniform distribution, and there's connection between them. If we initialize from a normal distribution with $\mathrm{Var}[W] = \sigma^2$, we can easily switch to uniform distribution by computing $a = \sqrt{3\sigma^2}$ and sampling weights from $\mathcal{U}(-a, a)$. Because of this connection I will only consider normal distribution and specify suggested variance for it.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Derivation-of-LeCun-Initialization">Derivation of LeCun Initialization<a class="anchor-link" href="#Derivation-of-LeCun-Initialization"> </a></h3><p>The reasoning behind LeCun initialization is fairly simple. We don't want weights to be very large, because they will lead to saturation and cause gradient vanishing. We also don't want weights to be very small, because they will make gradient small as well and make the whole optimization slow. What we want is that initial weights map inputs into linear region of sigmoid (roughly between -2 and 2), so the gradient is large enough and network learns easier linear part first.</p>
+<p>Consider a sigmoid layer and let $x$ denote input example and $y$ linearly transformed input, so</p>
+\begin{equation}
+    y = xW \\
+    y_i = \sum_{j = 1}^{fan_{in}}{x_{j}w_{ji}}
+\end{equation}<p>We can think of bias term as weight that always receives 1 as input and omit it. To achieve the above requirements we first demand $x$ to have zero mean and variance of 1. This is satisfied by normalizing inputs. Now we want initialize weights so that they ensure $y$ also has zero mean and unit variance. Let's write down expression for the variance of $y_i$</p>
+\begin{equation}
+    \mathrm{Var}[y_i] = \mathrm{Var}\Bigg[\sum_{j = 1}^{fan_{in}}{x_{j}w_{ji}}\Bigg] = \sum_{j = 1}^{fan_{in}} w_{ji}^2\mathrm{Var}[x_j] + \sum_{j \neq k}w_{ji}w_{ki}\mathrm{Cov}[x_j, x_k]
+\end{equation}<p>Assuming uncorrelated $x$, we have $\mathrm{Cov}[x_j, x_k] = 0$ for all pairs $j \neq k$. Recall we assumed all $\mathrm{Var}[x_i] = 1$. Hence</p>
+\begin{equation}
+    \mathrm{Var}[y_i] = \sum_{j = 1}^{fan_{in}} w_{ji}^2 \Rightarrow\ \mathrm{Var}[w] = \frac{\mathrm{Var}[y]}{fan_{in}} = \frac{1}{fan_{in}}
+\end{equation}<p>And that's it! One thing that should be mentioned here is that original paper also proposed a variant of sigmoid that ensures $\sigma(y)$ preserves zero mean and unit variance of $y$.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Xavier-(Glorot)-Initialization">Xavier (Glorot) Initialization<a class="anchor-link" href="#Xavier-(Glorot)-Initialization"> </a></h2><p>The next method was proposed in paper "<a href="http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf">Understanding the Difficulty of Training Deep Feedforward Neural Networks</a>" by Xavier Glorot and Yoshua Bengio in 2010. I don't know who decides whether we should call an invention after author's first name or last name, but this technique is widely known under both Xavier initialization and Glorot initialization.</p>
+<p>If you have skimmed through the derivation of LeCun initialization above or read it in original paper, you might have noticed that it was motivated entirely from the perspective of the forward pass. In their paper Glorot and Bengio additionly require preserving variance of gradient during the backward pass. From one hand, the forward pass requires, as previously</p>
+\begin{equation}
+    \mathrm{Var}[W] = \frac{1}{fan_{in}}
+\end{equation}<p>They show that the backward pass from the other hand requires</p>
+\begin{equation}
+    \mathrm{Var}[W] = \frac{1}{fan_{out}}
+\end{equation}<p>where $fan_{out}$ is the number of connections going out of a unit.</p>
+<p>Both constraints can be satisfied if and only if $fan_{in} = fan_{out}$, which isn't always the case. As a compromise authors suggest to set variance to</p>
+\begin{equation}
+    \mathrm{Var}[W] = \frac{1}{fan_{avg}} = \frac{2}{fan_{in} + fan_{out}}
+\end{equation}<p>Observe also that when $fan_{in} = fan_{out}$ Xavier initialization and LeCun initialization are equivalent.</p>
+<p>The paper compares performance of several networks of the same architecture that only differ in activation function and initialization method. Those networks were trained on different data sets using the same procedure. The final test errors for networks using tanh activation are represented in the following table</p>
+<table>
+<thead><tr>
+<th>TYPE</th>
+<th>Shapeset</th>
+<th>MNIST</th>
+<th>CIFAR-10</th>
+<th>Small ImageNet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tanh</td>
+<td>27.15</td>
+<td>1.76</td>
+<td>55.9</td>
+<td>70.58</td>
+</tr>
+<tr>
+<td>Tanh N</td>
+<td>15.60</td>
+<td>1.64</td>
+<td>52.92</td>
+<td>68.57</td>
+</tr>
+</tbody>
+</table>
+<p>Here tanh stands for the network with tanh activations and LeCun uniform initialization, while tanh N - for the network with tanh activations and Xavier uniform initialization. As can be seen, on all data sets Xavier initialization gives little to significant boost in performance when compared to LeCun initialization.</p>
+<p>A trouble with Xavier initialization is that it assumes linear units. This is a valid assumption when inputs are mapped to linear parts of non-linearities, but invalid in general. Nevertheless it still works pretty well. The following histograms of activation values and gradients from the paper show that Xavier initialization in experimental settings works as intended. Check out details in original paper!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Derivation-of-Xavier-Initialization">Derivation of Xavier Initialization<a class="anchor-link" href="#Derivation-of-Xavier-Initialization"> </a></h3><p>Consider a neural network with $L$ consequent layers. We begin with writing down equations for both forward and backward propagations. We make the same assumptions about input data as in the derivation of LeCun initialization. The forward pass is given by</p>
+\begin{equation}
+    Z^{[i]}_k = \varphi^{[i]}(Z^{[i - 1]}_k) W^{[i]}_{:, k}
+\end{equation}<p>And the backward pass by</p>
+\begin{equation}
+    \frac{\partial\mathscr{L}}{\partial Z^{[i]}_k} = \varphi^{[i]\prime}(Z^{[i]}_k)W^{[i]}_{k, :}\frac{\partial\mathscr{L}}{\partial Z^{[i + 1]}} \\
+    \frac{\partial\mathscr{L}}{\partial W^{[i]}_{lk}} = Z^{[i]}_l \frac{\partial\mathscr{L}}{\partial Z^{[i]}_k}
+\end{equation}<p>Then for a layer number $i$, assuming that $\varphi^{[i]\prime}(z^{[i]}_k) = 1$</p>
+\begin{equation}
+    \mathrm{Var}[Z^{[i]}] = \mathrm{Var}[X]\prod_{j=0}^{i-1}n^{[j]}\mathrm{Var}[W^{[j]}]\\
+    \mathrm{Var}\Bigg[\frac{\partial\mathscr{L}}{\partial Z^{[i]}}\Bigg] = \mathrm{Var}\Bigg[\frac{\partial\mathscr{L}}{\partial Z^{[L]}}\Bigg]\prod_{j = i}^{L - 1}n^{[j + 1]}\mathrm{Var}[W^{[j]}]\\
+    \mathrm{Var}\Bigg[\frac{\partial\mathscr{L}}{\partial W^{[i]}}\Bigg] = \mathrm{Var}[Z^{[i]}]\mathrm{Var}\Bigg[\frac{\partial\mathscr{L}}{\partial Z^{[i]}}\Bigg]
+\end{equation}<p>From the perspective of the forward pass we wish</p>
+\begin{equation}
+    \forall\ (i, j):\ \mathrm{Var}[Z^{[i]}] = \mathrm{Var}[Z^{[j]}]
+\end{equation}<p>And from the back prop point of view we want</p>
+\begin{equation}
+    \forall\ (i, j):\ \mathrm{Var}\Bigg[\frac{\partial\mathscr{L}}{\partial Z^{[i]}}\Bigg] = \mathrm{Var}\Bigg[\frac{\partial\mathscr{L}}{\partial Z^{[j]}}\Bigg]
+\end{equation}<p>These two constraints can be easily satisfied if</p>
+\begin{equation}
+    \forall\ i:\ n^{[i]}\mathrm{Var}[W^{[i]}] = \mathrm{Var}[X] = 1\\
+    \forall\ i:\ n^{[i + 1]}\mathrm{Var}\Bigg[\frac{\partial\mathscr{L}}{\partial Z^{[i]}}\Bigg] = \mathrm{Var}\Bigg[\frac{\partial\mathscr{L}}{\partial Z^{[L]}}\Bigg] = 1
+\end{equation}<p>From these two equations we finally get</p>
+\begin{equation}
+    \mathrm{Var}[W^{[i]}] = \frac{1}{n^{[i]}} = \frac{1}{fan_{in}} \\
+    \mathrm{Var}[W^{[i]}] = \frac{1}{n^{[i + 1]}} = \frac{1}{fan_{out}}
+\end{equation}<p>As a compromise for cases when $fan_{in} \neq fan_{out}$</p>
+\begin{equation}
+    \mathrm{Var}[W^{[i]}] = \frac{2}{fan_{in} + fan_{out}}
+\end{equation}
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions"> </a></h2><p>Without appropriate choice of activation function and/or smart initialization for it neural networks, especially deep ones, tend to refuse training at all. Better activation functions and better initialization strategies are tightly related, so that they complement each other and evolve together. Once popular sigmoid non-linearity turned out to be impractical to use in hidden layers, and now is only used in the output layer for binary classification, while tanh that can be expressed in terms of sigmoid, is still useful for hidden layers. At the first glance initialization strategies seem some wisdom sent from heaven, but at least in case of LeCun and Xavier initialization their derivations are in fact straightforward. All you need to know is where to start and what assumptions to make.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+  </div><a class="u-url" href="/blog/fastpages/jupyter/2020/07/31/An-Overview-of-Activations-and-Initializations-for-Deep-Neural-Networks,-Part-1.html" hidden></a>
+</article>
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/blog/"></data>
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col">
+        <p class="feed-subscribe">
+          <a href="/blog/feed.xml">
+            <svg class="svg-icon orange">
+              <use xlink:href="/blog/assets/minima-social-icons.svg#rss"></use>
+            </svg><span>Subscribe</span>
+          </a>
+        </p>
+      </div>
+      <div class="footer-col">
+        <p>Yet another blog on ML.</p>
+      </div>
+    </div>
+
+    <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/akulchik" title="akulchik"><svg class="svg-icon grey"><use xlink:href="/blog/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://twitter.com/andreikulchik" title="andreikulchik"><svg class="svg-icon grey"><use xlink:href="/blog/assets/minima-social-icons.svg#twitter"></use></svg></a></li></ul>
+</div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
